@@ -58,7 +58,7 @@ class App extends React.Component {
             <img src={item.src} alt={item.name} />
             <ImageListItemBar
               title={item.name}
-              subtitle={<span>by: {item.symbol}</span>}
+              subtitle={<span>{item.symbol}</span>}
               actionIcon={
                 <IconButton aria-label={`info about ${item.name}`} className="icon">
                   <InfoIcon />
