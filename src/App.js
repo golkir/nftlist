@@ -32,7 +32,8 @@ class App extends React.Component {
           .then((result) => {
             let url_split = result.image.split('/');
             let image_id = url_split.reverse()[1];
-            item.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/image.png";
+            let file_name = url_split[0]
+            item.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
             console.log(item.src);
             transformed.push(item);
             this.setState({nfts: transformed});
