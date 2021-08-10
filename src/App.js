@@ -28,30 +28,25 @@ class App extends React.Component {
    }
 
    componentDidMount(){
+    let transformed = [];
      Moralis.Web3.authenticate().then((user) => {
-      Moralis.Web3.getNFTs({chain: 'eth', address: '0xD9DcC3af32Bb84e15bB7BfFcEaD280384c47066E'}).then((nfts) => {
-        let transformed = [];
-        nfts.map((item) => {
-          console.log(item);
-          fetch(item.token_uri)
-          .then((res) => res.json())
-          .then((result) => {
-            let url_split = result.image.split('/');
-            if (url_split[0] === 'ipfs:') {
-              let image_id = url_split.reverse()[1];
-              let file_name = url_split[0]
-              item.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
-            } else {
-              item.src = result.image;
-            }
-            transformed.push(item);
-            this.setState({nfts: transformed});
-          })
-        })
+      Moralis.Web3.getNFTs({chain:'eth',address: '0xd9dcc3af32bb84e15bb7bffcead280384c47066e'}).then(async (nfts) => {
+        for (let nft of nfts) {
+          let res = await fetch(nft.token_uri);
+          let meta = await res.json();
+          let url_split = meta.image.split('/');
+          if (url_split[0] === 'ipfs:') {
+            let image_id = url_split.reverse()[1];
+            let file_name = url_split[0]
+            nft.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
+          } else {
+            nft.src = meta.image;
+          }
+          transformed.push(nft);
+        }
+        this.setState({nfts: transformed});
       })
      })
-   
-   
    }
 
 
