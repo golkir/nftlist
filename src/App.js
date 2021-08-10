@@ -9,6 +9,11 @@ import InfoIcon from '@material-ui/icons/Info';
 import "./index.css"
 const itemData = require("./images.js");
 
+//Required modules
+const ipfsAPI = require('ipfs-api');
+//Connceting to the ipfs network via infura gateway
+const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+
 const Moralis  = require('moralis/node');
 Moralis.initialize("6c6GVEQU3vzBwXsO5sfKSxa9zFddpxTXpiXIwC71");
 Moralis.serverURL = 'https://py4aahfunxcm.usemoralis.com:2053/server';
@@ -27,14 +32,18 @@ class App extends React.Component {
       Moralis.Web3.getNFTs().then((nfts) => {
         let transformed = [];
         nfts.map((item) => {
+          console.log(item);
           fetch(item.token_uri)
           .then((res) => res.json())
           .then((result) => {
             let url_split = result.image.split('/');
-            let image_id = url_split.reverse()[1];
-            let file_name = url_split[0]
-            item.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
-            console.log(item.src);
+            if (url_split[0] === 'ipfs:') {
+              let image_id = url_split.reverse()[1];
+              let file_name = url_split[0]
+              item.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
+            } else {
+              item.src = result.image;
+            }
             transformed.push(item);
             this.setState({nfts: transformed});
           })
