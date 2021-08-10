@@ -29,7 +29,7 @@ class App extends React.Component {
 
    componentDidMount(){
      Moralis.Web3.authenticate().then((user) => {
-      Moralis.Web3.getNFTs().then((nfts) => {
+      Moralis.Web3.getNFTs({chain: 'eth', address: '0xD9DcC3af32Bb84e15bB7BfFcEaD280384c47066E'}).then((nfts) => {
         let transformed = [];
         nfts.map((item) => {
           console.log(item);
