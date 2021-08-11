@@ -1,5 +1,6 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import { TextField, Input, FormControl } from '@material-ui/core';
 import ImageList from '@material-ui/core/ImageList';
 import ImageListItem from '@material-ui/core/ImageListItem';
 import ImageListItemBar from '@material-ui/core/ImageListItemBar';
@@ -8,7 +9,7 @@ import IconButton from '@material-ui/core/IconButton';
 import InfoIcon from '@material-ui/icons/Info';
 import "./index.css"
 const itemData = require("./images.js");
-
+const axios = require('axios');
 //Required modules
 const ipfsAPI = require('ipfs-api');
 //Connceting to the ipfs network via infura gateway
@@ -28,38 +29,83 @@ class App extends React.Component {
    }
 
    componentDidMount(){
+     Moralis.Web3.authenticate().then(async (user) => {
+       await this.getNfts('eth', user.address);
+     })
+   }
+
+   handleWalletSelect = async (event) => {
+
+      await this.getNfts('eth', event.target.value);
+   }
+
+   getNfts = async(chain, address) => {
     let transformed = [];
-     Moralis.Web3.authenticate().then((user) => {
-      Moralis.Web3.getNFTs({chain:'eth',address: '0xd9dcc3af32bb84e15bb7bffcead280384c47066e'}).then(async (nfts) => {
+    let opts = {
+      chain: chain ? chain : 'eth',
+      address: address
+    }
+
+    Moralis.Web3.getNFTs(opts).then(async (nfts) => {
         for (let nft of nfts) {
-          let res = await fetch(nft.token_uri);
-          let meta = await res.json();
-          let url_split = meta.image.split('/');
-          if (url_split[0] === 'ipfs:') {
-            let image_id = url_split.reverse()[1];
-            let file_name = url_split[0]
-            nft.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
-          } else {
-            nft.src = meta.image;
+          console.log(nft);
+          let res;
+          let meta;
+
+          try {
+            res = await fetch(nft.token_uri);
+            meta = await res.json();
           }
-          transformed.push(nft);
+          catch(e) {
+            console.log(e);
+          }
+
+          if (meta && meta.image) {
+            let url_split = meta.image.split('/');
+            if (url_split[0] === 'ipfs:') {
+              let image_id = url_split.reverse()[1];
+              let file_name = url_split[0]
+              nft.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
+              transformed.push(nft);
+            } else {
+              
+              nft.src = meta.image;
+              transformed.push(nft);
+              console.log('blob')
+            }
+          } else {
+            try {
+              res = await axios.get(nft.token_uri, {
+              responseType: 'arraybuffer'
+            });
+              const imgFile = new Blob([res.data]);
+              const imgUrl = URL.createObjectURL(imgFile);
+              nft.src = imgUrl;
+              transformed.push(nft);
+            } 
+            catch(e) {
+              console.log(e);
+            }
+            
+          }
         }
         this.setState({nfts: transformed});
       })
-     })
    }
 
 
    render() {
      return (
-
         <div className="root">
-           <ImageList rowHeight={180} className="imageList">
-        <ImageListItem key="Subheader" cols={3} style={{ height: 'auto' }}>
+          <FormControl fullWidth variant="outlined">
+          <TextField id="standard-basic" label="Paste any ETH address" onChange={this.handleWalletSelect} />
+          </FormControl>
+          <ImageList rowHeight={180} className="imageList">
+          <ImageListItem key="Subheader" cols={3} style={{ height: 'auto' }}>
           <ListSubheader component="div">NFTs</ListSubheader>
-        </ImageListItem>
-        {this.state.nfts.map((item) => (
-          <ImageListItem key={item.token_uri}>
+          </ImageListItem>
+          {this.state.nfts.map((item) => (
+          <ImageListItem key={item.token_id}>
             <img src={item.src} alt={item.name} />
             <ImageListItemBar
               title={item.name}
