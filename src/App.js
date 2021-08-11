@@ -48,49 +48,60 @@ class App extends React.Component {
 
     Moralis.Web3.getNFTs(opts).then(async (nfts) => {
         for (let nft of nfts) {
-          console.log(nft);
-          let res;
-          let meta;
 
-          try {
-            res = await fetch(nft.token_uri);
-            meta = await res.json();
+          console.log(nft);
+          if (!nft.token_uri){
+            console.log('no uri');
+            continue;
           }
-          catch(e) {
-            console.log(e);
-          }
+
+          let meta = await this.httpMoralis(nft.token_uri);
 
           if (meta && meta.image) {
+
             let url_split = meta.image.split('/');
-            if (url_split[0] === 'ipfs:') {
-              let image_id = url_split.reverse()[1];
-              let file_name = url_split[0]
+            let protocol = url_split[0];
+            let image_id = url_split.reverse()[1];
+            let file_name = url_split[0]
+            let ext = file_name.split('.')[1]
+            let isImage = ext === 'png' || file_name === 'gif' || file_name === 'jpg' || file_name === 'jpeg';
+
+            if (protocol === 'ipfs:') {
               nft.src = "https://ipfs.io/ipfs/" + image_id + '/' + file_name;
-              transformed.push(nft);
-            } else {
-              
-              nft.src = meta.image;
-              transformed.push(nft);
-              console.log('blob')
-            }
-          } else {
-            try {
-              res = await axios.get(nft.token_uri, {
-              responseType: 'arraybuffer'
-            });
-              const imgFile = new Blob([res.data]);
-              const imgUrl = URL.createObjectURL(imgFile);
-              nft.src = imgUrl;
-              transformed.push(nft);
             } 
-            catch(e) {
-              console.log(e);
+            else if(isImage) {
+              nft.src = meta.image
             }
-            
-          }
+          } else if(nft.token_uri) {
+            nft.src = nft.token_uri;
+          } 
+          transformed.push(nft);
         }
         this.setState({nfts: transformed});
       })
+   }
+
+   createImgUrl = async(url) => {
+     let res = await this.httpMoralis(url);
+     const imgFile = new Blob([res]);
+     const imgUrl = URL.createObjectURL(imgFile);
+     return imgUrl;
+   }
+
+   httpMoralis = async (url) => {
+     let res;
+     let params = {url: url} 
+     try {
+      res =  await Moralis.Cloud.run("getImage", params);
+      if (res) {
+        if (res.data) {
+         return res.data;
+        }
+       }
+      }
+     catch(e){
+      console.error(e);
+     }
    }
 
 
@@ -104,8 +115,8 @@ class App extends React.Component {
           <ImageListItem key="Subheader" cols={3} style={{ height: 'auto' }}>
           <ListSubheader component="div">NFTs</ListSubheader>
           </ImageListItem>
-          {this.state.nfts.map((item) => (
-          <ImageListItem key={item.token_id}>
+          {this.state.nfts.map((item,index) => (
+          <ImageListItem key={index}>
             <img src={item.src} alt={item.name} />
             <ImageListItemBar
               title={item.name}
