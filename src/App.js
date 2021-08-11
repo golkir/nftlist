@@ -65,7 +65,7 @@ class App extends React.Component {
             if (url_split[0] === 'ipfs:') {
               let image_id = url_split.reverse()[1];
               let file_name = url_split[0]
-              nft.src = "https://ipfs.moralis.io:2053/ipfs/" + image_id + "/" + file_name;
+              nft.src = "https://ipfs.io/ipfs/" + image_id + '/' + file_name;
               transformed.push(nft);
             } else {
               
