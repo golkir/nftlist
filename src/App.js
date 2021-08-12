@@ -50,12 +50,12 @@ class App extends React.Component {
         for (let nft of nfts) {
 
           console.log(nft);
+          
           if (!nft.token_uri){
-            console.log('no uri');
             continue;
           }
 
-          let meta = await this.httpMoralis(nft.token_uri);
+          let meta = await this.getNFTMeta(nft.token_uri);
 
           if (meta && meta.image) {
 
@@ -67,12 +67,11 @@ class App extends React.Component {
             let isImage = ext === 'png' || file_name === 'gif' || file_name === 'jpg' || file_name === 'jpeg';
 
             if (protocol === 'ipfs:') {
-              nft.src = "https://ipfs.io/ipfs/" + image_id + '/' + file_name;
-            } 
-            else if(isImage) {
-              nft.src = meta.image
-            }
-          } else if(nft.token_uri) {
+               nft.src = "https://ipfs.io/ipfs/" + image_id + '/' + file_name;
+            }  
+            else { nft.src = meta.image }
+          } 
+          else if (nft.token_uri) {
             nft.src = nft.token_uri;
           } 
           transformed.push(nft);
@@ -81,29 +80,18 @@ class App extends React.Component {
       })
    }
 
-   createImgUrl = async(url) => {
-     let res = await this.httpMoralis(url);
-     const imgFile = new Blob([res]);
-     const imgUrl = URL.createObjectURL(imgFile);
-     return imgUrl;
-   }
-
-   httpMoralis = async (url) => {
+   getNFTMeta = async (url) => {
      let res;
-     let params = {url: url} 
+     let params = {url: url};
+
      try {
       res =  await Moralis.Cloud.run("getImage", params);
-      if (res) {
-        if (res.data) {
-         return res.data;
-        }
-       }
+      if (res && res.data) { return res.data; }
       }
      catch(e){
       console.error(e);
      }
    }
-
 
    render() {
      return (
